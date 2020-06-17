@@ -1,0 +1,48 @@
+import os
+import re
+import sys
+
+
+def main(filename, output_file):
+    # Regex used to match relevant loglines (in this case, a specific IP address)
+    line_regex = re.compile(r"ERROR:", re.IGNORECASE)
+
+    dict_to_maintain = {}
+    # Output file, where the matched loglines will be copied to
+    output_filename = os.path.normpath(output_file)
+    # Overwrites the file, ensure we're starting out with a blank file
+    with open(output_filename, "w") as out_file:
+        out_file.write("")
+
+    # Open output file in 'append' mode
+    with open(output_filename, "a") as out_file:
+        # Open input file in 'read' mode
+
+        with open(filename, "r") as in_file:
+            # Loop over each log line
+            for line in in_file:
+                user_session_match = re.search(r"\s+\[(.*?)\]\s+", line)
+                user_session = user_session_match.group(1)
+                # If log line matches our regex, print to console, and output file
+                if line_regex.search(line):
+                    if user_session in dict_to_maintain.keys():
+                        for out_content in dict_to_maintain[user_session][-3:]:
+                            out_file.write(out_content)
+                        del dict_to_maintain[user_session]
+                    out_file.write(line + "-----\n")
+                else:
+                    if user_session not in dict_to_maintain.keys():
+                        dict_to_maintain[user_session] = [line]
+                    else:
+                        dict_to_maintain[user_session].append(line)
+
+
+if __name__ == "__main__":
+    # filename = "sample.log"
+    output_file = "output.log"
+    if len(sys.argv) != 2:
+        raise ValueError('Please provide log file path to read')
+    filename = sys.argv[1]
+    print(f'Given logfile path is: {filename}')
+    main(filename, output_file)
+    print(f'Check file for the output > {output_file}')
